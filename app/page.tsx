@@ -1,6 +1,7 @@
 "use client";
 
-import DynamicFeature, { EvolutionPanel } from "../components/DynamicFeature";
+import DynamicFeature from "../components/DynamicFeature";
+import EvolutionPanel from "../components/EvolutionPanel";
 
 export default function Home() {
   return (

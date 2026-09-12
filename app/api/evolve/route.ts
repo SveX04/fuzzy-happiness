@@ -3,7 +3,7 @@ import { Octokit } from "@octokit/rest";
 
 const FILE_PATH = "components/DynamicFeature.tsx";
 const BASE_BRANCH = process.env.GITHUB_BASE_BRANCH ?? "main";
-const systemPrompt = `Rewrite the supplied Next.js component for the requested feature. Return only a concise, valid TSX file. It must contain a default export, use Tailwind CSS, and remain accessible. If the request asks for many features, implement only the three smallest useful changes so the complete file stays under 900 output tokens. Avoid unnecessary state, effects, and helper code. No reasoning, prose, or markdown fences.`;
+const systemPrompt = `Rewrite the supplied small Next.js component for the requested feature. Return only a concise, valid TSX file. Preserve the default export, use Tailwind CSS, and keep it accessible. Implement at most three small changes. No reasoning, prose, or markdown fences.`;
 
 function cleanGeneratedCode(code: string) {
   return code

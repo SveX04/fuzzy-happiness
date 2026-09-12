@@ -3,18 +3,46 @@
 import { useState } from "react";
 
 export default function DynamicFeature() {
+  const [likes, setLikes] = useState(0);
+  const [liked, setLiked] = useState(false);
+
+  function toggleLike() {
+    setLiked((prev) => {
+      const next = !prev;
+      setLikes((count) => count + (next ? 1 : -1));
+      return next;
+    });
+  }
+
   return (
     <div className="my-6 rounded-xl border border-slate-700 bg-slate-800 p-8 text-white shadow-lg">
       <h2 className="mb-2 text-2xl font-bold">Version 1.0 Feature</h2>
       <p className="mb-6 text-slate-300">
         This is a starter component. Enter a prompt below to make the AI agent redesign or extend this component automatically.
       </p>
-      <button
-        type="button"
-        className="rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-800"
-      >
-        Get Started
-      </button>
+      <div className="flex items-center gap-4">
+        <button
+          type="button"
+          onClick={toggleLike}
+          aria-pressed={liked}
+          aria-label={liked ? "Unlike" : "Like"}
+          className="rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-800"
+        >
+          Get Started
+        </button>
+        <button
+          type="button"
+          onClick={toggleLike}
+          aria-pressed={liked}
+          aria-label={liked ? "Unlike feature" : "Like feature"}
+          className="flex items-center gap-2 rounded-lg border border-slate-600 px-4 py-3 text-slate-200 transition-colors hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 focus:ring-offset-slate-800"
+        >
+          <span aria-hidden="true" className={liked ? "text-pink-500" : "text-slate-400"}>
+            {liked ? "♥" : "♡"}
+          </span>
+          <span>{likes}</span>
+        </button>
+      </div>
     </div>
   );
 }
@@ -59,21 +87,3 @@ export function EvolutionPanel() {
       <textarea
         className="mb-4 w-full rounded-md border p-3 text-black"
         rows={3}
-        placeholder="e.g. Turn the feature into an interactive dark-mode dashboard."
-        value={prompt}
-        onChange={(event) => setPrompt(event.target.value)}
-        aria-label="Describe the change"
-      />
-      <button
-        type="button"
-        onClick={triggerEvolution}
-        disabled={isLoading || !prompt.trim()}
-        className="rounded-md bg-indigo-600 px-6 py-2 text-white hover:bg-indigo-700 disabled:opacity-50"
-      >
-        {isLoading ? "Evolving Code..." : "Submit AI Task"}
-      </button>
-      {error && <p className="mt-4 text-sm text-red-700" role="alert">Failed: {error}</p>}
-      {status && <p className="mt-4 text-sm text-gray-700" role="status">{status}</p>}
-    </section>
-  );
-}

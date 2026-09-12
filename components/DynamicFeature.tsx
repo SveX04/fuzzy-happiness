@@ -1,79 +1,68 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+
+type Particle = { id: number; x: number; y: number; vx: number; vy: number; size: number; hue: number };
+type Todo = { id: number; text: string; done: boolean };
+type Stat = { label: string; value: number; target: number; color: string };
 
 export default function DynamicFeature() {
-  return (
-    <div className="my-6 rounded-xl border border-slate-700 bg-slate-800 p-8 text-white shadow-lg">
-      <h2 className="mb-2 text-2xl font-bold">Version 1.0 Feature</h2>
-      <p className="mb-6 text-slate-300">
-        This is a starter component. Enter a prompt below to make the AI agent redesign or extend this component automatically.
-      </p>
-      <button
-        type="button"
-        className="rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-800"
-      >
-        Get Started
-      </button>
-    </div>
-  );
-}
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [fontSize, setFontSize] = useState(16);
+  const [particles, setParticles] = useState<Particle[]>([]);
+  const [todos, setTodos] = useState<Todo[]>([]);
+  const [todoInput, setTodoInput] = useState("");
+  const [timer, setTimer] = useState(0);
+  const [timerRunning, setTimerRunning] = useState(false);
+  const [quote, setQuote] = useState("Stay curious, keep building.");
+  const [quoteIndex, setQuoteIndex] = useState(0);
+  const [score, setScore] = useState(0);
+  const [highScore, setHighScore] = useState(0);
+  const [ballPos, setBallPos] = useState({ x: 50, y: 50 });
+  const [ballDir, setBallDir] = useState({ x: 1, y: 1 });
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [stats, setStats] = useState<Stat[]>([
+    { label: "Engagement", value: 0, target: 87, color: "bg-blue-500" },
+    { label: "Performance", value: 0, target: 94, color: "bg-emerald-500" },
+    { label: "Creativity", value: 0, target: 72, color: "bg-purple-500" },
+  ]);
+  const [activeTab, setActiveTab] = useState(0);
+  const [confetti, setConfetti] = useState(false);
+  const [soundOn, setSoundOn] = useState(false);
+  const [mood, setMood] = useState("😎");
+  const [ripple, setRipple] = useState<{ x: number; y: number; id: number } | null>(null);
 
-export function EvolutionPanel() {
-  const [prompt, setPrompt] = useState("");
-  const [status, setStatus] = useState("");
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const quotes = [
+    "Stay curious, keep building.",
+    "Code is poetry in logic.",
+    "Ship it, then improve it.",
+    "The best code is no code.",
+    "Break it to fix it.",
+    "Simplicity is the ultimate sophistication.",
+    "Make it work, make it right, make it fast.",
+  ];
 
-  async function triggerEvolution() {
-    if (!prompt.trim()) return;
+  const gameRef = useRef<HTMLDivElement>(null);
+  const animRef = useRef<number>(0);
+  const particleId = useRef(0);
 
-    setIsLoading(true);
-    setError("");
-    setStatus("AI agent is generating component code and opening a pull request...");
+  const isDark = theme === "dark";
 
-    try {
-      const response = await fetch("/api/evolve", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt }),
-      });
-      const result = (await response.json()) as { code?: string; error?: string };
+  const bg = isDark ? "bg-slate-900" : "bg-slate-100";
+  const cardBg = isDark ? "bg-slate-800 border-slate-700" : "bg-white border-slate-300";
+  const text = isDark ? "text-white" : "text-slate-900";
+  const subtext = isDark ? "text-slate-300" : "text-slate-600";
 
-      if (!response.ok) {
-        throw new Error(result.error ?? "Unable to evolve the feature.");
-      }
+  // Timer
+  useEffect(() => {
+    if (!timerRunning) return;
+    const id = setInterval(() => setTimer((t) => t + 1), 1000);
+    return () => clearInterval(id);
+  }, [timerRunning]);
 
-      setStatus("Pull request created successfully. GitHub Actions will validate it before merging.");
-    } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Unable to evolve the feature.");
-      setStatus("");
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  return (
-    <section className="mt-8 rounded-lg border bg-gray-50 p-6 shadow-sm" aria-labelledby="control-heading">
-      <h2 id="control-heading" className="mb-2 text-lg font-semibold">Instruct the Website to Change Itself</h2>
-      <textarea
-        className="mb-4 w-full rounded-md border p-3 text-black"
-        rows={3}
-        placeholder="e.g. Turn the feature into an interactive dark-mode dashboard."
-        value={prompt}
-        onChange={(event) => setPrompt(event.target.value)}
-        aria-label="Describe the change"
-      />
-      <button
-        type="button"
-        onClick={triggerEvolution}
-        disabled={isLoading || !prompt.trim()}
-        className="rounded-md bg-indigo-600 px-6 py-2 text-white hover:bg-indigo-700 disabled:opacity-50"
-      >
-        {isLoading ? "Evolving Code..." : "Submit AI Task"}
-      </button>
-      {error && <p className="mt-4 text-sm text-red-700" role="alert">Failed: {error}</p>}
-      {status && <p className="mt-4 text-sm text-gray-700" role="status">{status}</p>}
-    </section>
-  );
-}
+  // Quote rotation
+  useEffect(() => {
+    const id = setInterval(() => setQuoteIndex((i) => (i + 1) % quotes.length), 4000);
+    return () => clearInterval(id);
+  }, []);
+  useEffect(() => {

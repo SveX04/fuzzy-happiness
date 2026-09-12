@@ -3,11 +3,12 @@ import { Octokit } from "@octokit/rest";
 
 const FILE_PATH = "components/DynamicFeature.tsx";
 const BASE_BRANCH = process.env.GITHUB_BASE_BRANCH ?? "main";
-const systemPrompt = `You are an autonomous React and TypeScript developer. Rewrite the supplied Next.js component to satisfy the user's request. Keep it as a single valid TSX file, preserve the default export, use Tailwind CSS, and keep the component accessible. Respond only with executable TypeScript React code. Never include markdown fences or explanations.`;
+const systemPrompt = `Rewrite the supplied Next.js component for the requested feature. Return only a concise, valid TSX file. It must contain a default export, use Tailwind CSS, and remain accessible. If the request asks for many features, implement only the three smallest useful changes so the complete file stays under 900 output tokens. Avoid unnecessary state, effects, and helper code. No reasoning, prose, or markdown fences.`;
 
 function cleanGeneratedCode(code: string) {
   return code
     .trim()
+    .replace(/<think>[\s\S]*?<\/think>/gi, "")
     .replace(/^```(?:tsx|typescript|javascript|jsx)?\s*/i, "")
     .replace(/\s*```$/, "")
     .trim();
@@ -79,8 +80,11 @@ export async function POST(request: Request) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: process.env.GROQ_MODEL ?? "qwen/qwen3.8-27b",
+        model: process.env.GROQ_MODEL ?? "openai/gpt-oss-20b",
         temperature: 0.3,
+        max_tokens: 900,
+        reasoning_effort: "low",
+        reasoning_format: "hidden",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: `Current Code:\n${currentCode}\n\nTask:\n${task}` },
@@ -91,20 +95,30 @@ export async function POST(request: Request) {
     if (!aiResponse.ok) {
       const details = await aiResponse.text();
       console.error("Groq request failed:", details);
+      let providerMessage = "Check GROQ_API_KEY and GROQ_MODEL.";
+      try {
+        const parsedDetails = JSON.parse(details) as { error?: { message?: string } };
+        providerMessage = parsedDetails.error?.message ?? providerMessage;
+      } catch {
+        // Keep the user-facing fallback when Groq does not return JSON.
+      }
       return NextResponse.json(
-        { error: "Groq could not generate the feature. Check GROQ_API_KEY and GROQ_MODEL." },
+        { error: `Groq could not generate the feature: ${providerMessage}` },
         { status: 502 },
       );
     }
 
     const aiResult = (await aiResponse.json()) as {
-      choices?: Array<{ message?: { content?: string } }>;
+      choices?: Array<{ finish_reason?: string; message?: { content?: string } }>;
     };
-    const generatedCode = aiResult.choices?.[0]?.message?.content;
+    const choice = aiResult.choices?.[0];
+    const generatedCode = choice?.message?.content;
     const newCode = generatedCode ? cleanGeneratedCode(generatedCode) : "";
 
-    if (!newCode || !/export\s+default/.test(newCode)) {
-      throw new Error("The AI returned invalid component code.");
+    if (!newCode || !/export\s+default/.test(newCode) || !newCode.endsWith("}")) {
+      throw new Error(
+        `The AI returned invalid or incomplete component code${choice?.finish_reason === "length" ? " because the response was truncated" : ""}. Try a smaller feature request.`,
+      );
     }
 
     const branchName = `ai-update-${Date.now()}`;
@@ -161,6 +175,17 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: `GitHub has no ${BASE_BRANCH} branch yet. Push an initial commit to the repository before evolving the site.` },
         { status: 409 },
+      );
+    }
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "status" in error &&
+      error.status === 403
+    ) {
+      return NextResponse.json(
+        { error: `GitHub denied branch creation. Update this token for ${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO} with Contents: Read and write, then restart the server.` },
+        { status: 403 },
       );
     }
     return NextResponse.json(

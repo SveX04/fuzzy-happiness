@@ -4,11 +4,22 @@ import { useState } from "react";
 
 export default function DynamicFeature() {
   const [rating, setRating] = useState(0);
+  const [dark, setDark] = useState(false);
   const stars = Array.from({ length: 5 }, (_, i) => i + 1);
 
   return (
-    <div className="my-6 rounded-xl border border-slate-700 bg-slate-800 p-8 text-white shadow-lg">
-      <h2 className="mb-2 text-2xl font-bold">Version 1.0 Feature</h2>
+    <div className={`my-6 rounded-xl border ${dark ? "border-slate-300" : "border-slate-700"} bg-${dark ? "slate-900" : "slate-800"} p-8 text-${dark ? "white" : "white"} shadow-lg transition-colors`}>
+      <div className="flex justify-between items-center mb-2">
+        <h2 className="text-2xl font-bold">Version 1.0 Feature</h2>
+        <button
+          type="button"
+          aria-label="Toggle dark mode"
+          className="rounded-full p-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-800"
+          onClick={() => setDark((d) => !d)}
+        >
+          {dark ? "🌞" : "🌙"}
+        </button>
+      </div>
       <p className="mb-6 text-slate-300">
         This is a starter component. Enter a prompt below to make the AI agent redesign or extend this component automatically.
       </p>
@@ -33,6 +44,9 @@ export default function DynamicFeature() {
       >
         Get Started
       </button>
+      <div className="mt-4 text-xs text-slate-400">
+        Built by AI
+      </div>
     </div>
   );
 }

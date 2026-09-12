@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { Octokit } from "@octokit/rest";
-import OpenAI from "openai";
 
 const FILE_PATH = "components/DynamicFeature.tsx";
 const BASE_BRANCH = process.env.GITHUB_BASE_BRANCH ?? "main";
@@ -24,7 +23,7 @@ export async function POST(request: Request) {
     }
 
     const requiredVariables = [
-      "OPENAI_API_KEY",
+      "GROQ_API_KEY",
       "GITHUB_TOKEN",
       "GITHUB_OWNER",
       "GITHUB_REPO",
@@ -45,10 +44,16 @@ export async function POST(request: Request) {
       );
     }
 
+    if (process.env.GROQ_API_KEY === "your_groq_api_key_here") {
+      return NextResponse.json(
+        { error: "GROQ_API_KEY is still a placeholder in .env.local." },
+        { status: 500 },
+      );
+    }
+
     const owner = process.env.GITHUB_OWNER!;
     const repo = process.env.GITHUB_REPO!;
     const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
     const mainRef = await octokit.git.getRef({
       owner,
@@ -67,15 +72,35 @@ export async function POST(request: Request) {
     }
 
     const currentCode = Buffer.from(fileResponse.data.content, "base64").toString("utf8");
-    const aiResponse = await openai.chat.completions.create({
-      model: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
-      temperature: 0.3,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: `Current Code:\n${currentCode}\n\nTask:\n${task}` },
-      ],
+    const aiResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: process.env.GROQ_MODEL ?? "qwen/qwen3.8-27b",
+        temperature: 0.3,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: `Current Code:\n${currentCode}\n\nTask:\n${task}` },
+        ],
+      }),
     });
-    const generatedCode = aiResponse.choices[0]?.message.content;
+
+    if (!aiResponse.ok) {
+      const details = await aiResponse.text();
+      console.error("Groq request failed:", details);
+      return NextResponse.json(
+        { error: "Groq could not generate the feature. Check GROQ_API_KEY and GROQ_MODEL." },
+        { status: 502 },
+      );
+    }
+
+    const aiResult = (await aiResponse.json()) as {
+      choices?: Array<{ message?: { content?: string } }>;
+    };
+    const generatedCode = aiResult.choices?.[0]?.message?.content;
     const newCode = generatedCode ? cleanGeneratedCode(generatedCode) : "";
 
     if (!newCode || !/export\s+default/.test(newCode)) {

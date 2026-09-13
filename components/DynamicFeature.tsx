@@ -29,9 +29,17 @@ export default function CurriculumCard({
   useEffect(() => {
     const now = new Date();
     const next = new Date(now);
-    next.setDate(now.getDate() + 7); // weekly proposal
+    next.setDate(now.getDate() + 7);
     setNextProposal(next.toLocaleDateString(undefined, { month: "short", day: "numeric" }));
   }, []);
+
+  const timeline = ["Created", "Open", "Checking", "Merged", "Closed", "Synced"];
+  const currentIndex = timeline.indexOf(
+    status === "merged" ? "Merged" :
+    status === "closed" ? "Closed" :
+    status === "open" ? "Open" :
+    "Created"
+  );
 
   return (
     <div
@@ -82,6 +90,15 @@ export default function CurriculumCard({
         >
           Get Started
         </button>
+      </div>
+      <div className="mb-4 text-sm text-slate-400">
+        Live PR timeline:{" "}
+        {timeline.map((step, i) => (
+          <span key={step} className={`flex items-center gap-1 ${i <= currentIndex ? "text-white" : "text-slate-500"}`}>
+            {step}
+            {i < timeline.length - 1 && <span>→</span>}
+          </span>
+        ))}
       </div>
       <div className="mb-2 text-sm text-slate-400">
         Next improvement proposal: {nextProposal}

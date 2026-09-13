@@ -12,7 +12,7 @@ export default function CurriculumCard({
   const [preview, setPreview] = useState(false);
 
   useEffect(() => {
-    const fetchStatus = async () => {
+    const fetchStatus = async (retries = 3) => {
       try {
         const res = await fetch(
           `https://api.github.com/repos/${repo}/pulls/${prNumber}`
@@ -21,6 +21,7 @@ export default function CurriculumCard({
         const data = await res.json();
         setStatus(data.state);
       } catch {
+        if (retries > 0) return fetchStatus(retries - 1);
         setStatus("unknown");
       }
     };
@@ -31,7 +32,9 @@ export default function CurriculumCard({
     const now = new Date();
     const next = new Date(now);
     next.setDate(now.getDate() + 7);
-    setNextProposal(next.toLocaleDateString(undefined, { month: "short", day: "numeric" }));
+    setNextProposal(
+      next.toLocaleDateString(undefined, { month: "short", day: "numeric" })
+    );
   }, []);
 
   const timeline = ["Created", "Open", "Checking", "Merged", "Closed", "Synced"];

@@ -83,7 +83,7 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         model: process.env.GROQ_MODEL ?? "openai/gpt-oss-20b",
         temperature: 0.3,
-        max_tokens: 900,
+        max_tokens: 2400,
         reasoning_effort: "low",
         reasoning_format: "hidden",
         messages: [
@@ -116,7 +116,7 @@ export async function POST(request: Request) {
     const generatedCode = choice?.message?.content;
     const newCode = generatedCode ? cleanGeneratedCode(generatedCode) : "";
 
-    if (!newCode || !/export\s+default/.test(newCode) || !newCode.endsWith("}")) {
+    if (!newCode || !/export\s+default/.test(newCode)) {
       throw new Error(
         `The AI returned invalid or incomplete component code${choice?.finish_reason === "length" ? " because the response was truncated" : ""}. Try a smaller feature request.`,
       );

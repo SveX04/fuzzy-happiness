@@ -1,6 +1,7 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { NextResponse } from "next/server";
+import { Octokit } from "@octokit/rest";
 
 const execFileAsync = promisify(execFile);
 
@@ -11,9 +12,36 @@ async function git(repoPath: string, args: string[]) {
   });
 }
 
-export async function POST() {
+function getPullRequestNumber(prUrl: string) {
+  const match = prUrl.match(/\/pull\/(\d+)(?:$|[/?#])/);
+  return match ? Number(match[1]) : null;
+}
+
+export async function POST(request: Request) {
   try {
     const repoPath = process.cwd();
+    const requestBody = (await request.json()) as { prUrl?: string };
+    const prNumber = requestBody.prUrl ? getPullRequestNumber(requestBody.prUrl) : null;
+    const owner = process.env.GITHUB_OWNER;
+    const repo = process.env.GITHUB_REPO;
+    const token = process.env.GITHUB_TOKEN;
+
+    if (!prNumber || !owner || !repo || !token) {
+      return NextResponse.json(
+        { error: "Wait for a valid pull request to be merged and closed before syncing main." },
+        { status: 400 },
+      );
+    }
+
+    const octokit = new Octokit({ auth: token });
+    const pullRequest = await octokit.pulls.get({ owner, repo, pull_number: prNumber });
+    if (!pullRequest.data.merged_at || pullRequest.data.state !== "closed") {
+      return NextResponse.json(
+        { error: "The pull request must be successfully merged and closed before syncing main." },
+        { status: 409 },
+      );
+    }
+
     const statusResult = await git(repoPath, ["status", "--porcelain"]);
     const output: string[] = [];
 

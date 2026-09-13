@@ -19,6 +19,9 @@ export default function EvolutionPanel() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isCheckingMerge, setIsCheckingMerge] = useState(false);
+  const [isCheckingPr, setIsCheckingPr] = useState(false);
+  const [prMergedAndClosed, setPrMergedAndClosed] = useState(false);
+  const [prMessage, setPrMessage] = useState("");
   const [mergeStatus, setMergeStatus] = useState<"unknown" | "mergeable" | "not-mergeable">("unknown");
   const [mergeMessage, setMergeMessage] = useState("");
   const [syncText, setSyncText] = useState("");
@@ -38,6 +41,50 @@ export default function EvolutionPanel() {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updates));
   }, [updates]);
+
+  const latestPrUrl = updates[0]?.prUrl;
+
+  async function checkPullRequest(prUrl: string, showChecking = true) {
+    if (showChecking) setIsCheckingPr(true);
+
+    try {
+      const response = await fetch("/api/check-pr", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prUrl }),
+      });
+      const result = (await response.json()) as {
+        error?: string;
+        mergedAndClosed?: boolean;
+        message?: string;
+      };
+
+      if (!response.ok || result.mergedAndClosed === undefined) {
+        throw new Error(result.error ?? "Unable to check pull request status.");
+      }
+
+      setPrMergedAndClosed(result.mergedAndClosed);
+      setPrMessage(result.message ?? "Pull request status checked.");
+      return result.mergedAndClosed;
+    } catch (requestError) {
+      setPrMergedAndClosed(false);
+      setPrMessage(requestError instanceof Error ? requestError.message : "Pull request status check failed.");
+      return false;
+    } finally {
+      if (showChecking) setIsCheckingPr(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!latestPrUrl) return;
+
+    void checkPullRequest(latestPrUrl);
+    const interval = window.setInterval(() => {
+      void checkPullRequest(latestPrUrl, false);
+    }, 10000);
+
+    return () => window.clearInterval(interval);
+  }, [latestPrUrl]);
 
   async function triggerEvolution() {
     if (!prompt.trim()) return;
@@ -71,6 +118,8 @@ export default function EvolutionPanel() {
       };
 
       setUpdates((previousUpdates) => [newUpdate, ...previousUpdates]);
+      setPrMergedAndClosed(false);
+      setPrMessage("Waiting for the pull request to be merged and closed.");
       setStatus("Pull request created successfully. Each update now lives in its own slot.");
       setPrompt("");
     } catch (requestError) {
@@ -84,10 +133,21 @@ export default function EvolutionPanel() {
   async function checkMergeability() {
     setIsCheckingMerge(true);
     setError("");
-    setMergeMessage("Checking whether git can safely rebase and merge...");
+    setMergeMessage("Checking pull request and git mergeability...");
     setMergeStatus("unknown");
 
     try {
+      if (!latestPrUrl) {
+        throw new Error("Create a pull request first. The sync action waits for it to be merged and closed.");
+      }
+
+      const mergedAndClosed = await checkPullRequest(latestPrUrl);
+      if (!mergedAndClosed) {
+        setMergeStatus("not-mergeable");
+        setMergeMessage("Wait for the pull request to be successfully merged and closed before syncing.");
+        return;
+      }
+
       const response = await fetch("/api/check-merge", { method: "POST" });
       const result = (await response.json()) as {
         mergeable?: boolean;
@@ -111,8 +171,8 @@ export default function EvolutionPanel() {
   }
 
   async function syncMainBranch() {
-    if (mergeStatus !== "mergeable") {
-      setError("This branch is not mergeable yet. Run the merge check first.");
+    if (!latestPrUrl || !prMergedAndClosed || mergeStatus !== "mergeable") {
+      setError("Wait for the pull request to be successfully merged and closed, then run the merge check.");
       return;
     }
 
@@ -122,7 +182,11 @@ export default function EvolutionPanel() {
     setStatus("Saving local changes, rebasing, and pushing main branch...");
 
     try {
-      const response = await fetch("/api/sync-main", { method: "POST" });
+      const response = await fetch("/api/sync-main", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prUrl: latestPrUrl }),
+      });
       const result = (await response.json()) as {
         error?: string;
         pullOutput?: string;
@@ -136,6 +200,7 @@ export default function EvolutionPanel() {
       const output = [result.pullOutput, result.pushOutput].filter(Boolean).join("\n");
       setSyncText(output || "Main branch is synced and pushed.");
       setStatus("Main branch was successfully rebased and pushed.");
+      setPrMergedAndClosed(false);
       setMergeStatus("unknown");
       setMergeMessage("");
     } catch (requestError) {
@@ -171,21 +236,32 @@ export default function EvolutionPanel() {
         <button
           type="button"
           onClick={checkMergeability}
-          disabled={isCheckingMerge}
+          disabled={isCheckingMerge || isCheckingPr || !latestPrUrl}
           className="rounded-md border border-slate-300 bg-white px-6 py-2 text-slate-700 hover:bg-slate-50 disabled:opacity-50"
         >
-          {isCheckingMerge ? "Checking mergeability..." : "Check git mergeability"}
+          {isCheckingMerge || isCheckingPr ? "Checking PR and git..." : "Check PR and git mergeability"}
         </button>
 
         <button
           type="button"
           onClick={syncMainBranch}
-          disabled={isSyncing || mergeStatus !== "mergeable"}
+          disabled={isSyncing || !prMergedAndClosed || mergeStatus !== "mergeable"}
           className="rounded-md border border-slate-300 bg-white px-6 py-2 text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
         >
           {isSyncing ? "Saving and syncing main..." : "Commit, rebase, and push main"}
         </button>
       </div>
+
+      {latestPrUrl && (
+        <div className="mt-4 flex items-center gap-2">
+          <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
+            prMergedAndClosed ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
+          }`}>
+            {isCheckingPr ? "Checking PR" : prMergedAndClosed ? "PR merged and closed" : "Waiting for PR merge"}
+          </span>
+          <p className="text-sm text-gray-700">{prMessage}</p>
+        </div>
+      )}
 
       {mergeMessage && (
         <div className="mt-4 flex items-center gap-2">

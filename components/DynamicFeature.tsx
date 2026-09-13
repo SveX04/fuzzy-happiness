@@ -10,6 +10,7 @@ export default function CurriculumCard({
   const [dark, setDark] = useState(false);
   const [nextProposal, setNextProposal] = useState<string>("");
   const [preview, setPreview] = useState(false);
+  const [category, setCategory] = useState<"Feature" | "Design" | "Bug fix" | "Accessibility" | "Performance">("Feature");
 
   useEffect(() => {
     const fetchStatus = async (retries = 3) => {
@@ -101,6 +102,21 @@ export default function CurriculumCard({
         >
           Preview
         </button>
+      </div>
+      <div className="mb-4 flex gap-2">
+        <label htmlFor="category" className="text-sm font-medium">Label:</label>
+        <select
+          id="category"
+          value={category}
+          onChange={(e) => setCategory(e.target.value as any)}
+          className="rounded bg-slate-700 text-white px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option>Feature</option>
+          <option>Design</option>
+          <option>Bug fix</option>
+          <option>Accessibility</option>
+          <option>Performance</option>
+        </select>
       </div>
       <div className="mb-4 text-sm text-slate-400">
         Live PR timeline:{" "}

@@ -10,7 +10,10 @@ export default function CurriculumCard({
   const [dark, setDark] = useState(false);
   const [nextProposal, setNextProposal] = useState<string>("");
   const [preview, setPreview] = useState(false);
-  const [category, setCategory] = useState<"Feature" | "Design" | "Bug fix" | "Accessibility" | "Performance">("Feature");
+  const [category, setCategory] = useState<
+    "Feature" | "Design" | "Bug fix" | "Accessibility" | "Performance"
+  >("Feature");
+  const [feedback, setFeedback] = useState("");
 
   useEffect(() => {
     const fetchStatus = async (retries = 3) => {
@@ -45,6 +48,12 @@ export default function CurriculumCard({
     status === "open" ? "Open" :
     "Created"
   );
+
+  const handleFeedback = () => {
+    // Simulate AI learning by logging feedback
+    console.log("Feedback submitted:", feedback);
+    setFeedback("");
+  };
 
   return (
     <div
@@ -129,6 +138,26 @@ export default function CurriculumCard({
       </div>
       <div className="mb-2 text-sm text-slate-400">
         Next improvement proposal: {nextProposal}
+      </div>
+      <div className="mb-4">
+        <label htmlFor="feedback" className="block text-sm font-medium text-slate-300 mb-1">
+          Feedback
+        </label>
+        <textarea
+          id="feedback"
+          value={feedback}
+          onChange={(e) => setFeedback(e.target.value)}
+          rows={3}
+          className="w-full rounded bg-slate-700 text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="Share your thoughts..."
+        />
+        <button
+          type="button"
+          className="mt-2 rounded bg-yellow-600 px-4 py-2 text-white hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+          onClick={handleFeedback}
+        >
+          Submit Feedback
+        </button>
       </div>
       <div className="mt-4 text-xs text-slate-400">Built by AI</div>
 

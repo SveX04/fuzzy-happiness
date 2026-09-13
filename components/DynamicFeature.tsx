@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from "react";
 
-export default function CurriculumCard({ repo = "owner/repo", prNumber = 1 }) {
+export default function CurriculumCard({
+  repo = "owner/repo",
+  prNumber = 1,
+}) {
   const [status, setStatus] = useState<string | null>(null);
   const [dark, setDark] = useState(false);
 
@@ -42,7 +45,7 @@ export default function CurriculumCard({ repo = "owner/repo", prNumber = 1 }) {
       <p className="mb-6 text-slate-300">
         Record design decisions and let AI auto-generate a visual change log to keep your team aligned.
       </p>
-      <div className="mb-4 flex items-center gap-1">
+      <div className="mb-4 flex items-center gap-1" aria-live="polite">
         <span className="text-sm font-medium">PR #{prNumber} status: </span>
         <span
           className={`px-2 py-1 rounded ${

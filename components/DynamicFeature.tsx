@@ -10,7 +10,11 @@ export default function CurriculumCard({
   const [dark, setDark] = useState(false);
   const [nextProposal, setNextProposal] = useState<string>("");
   const [preview, setPreview] = useState(false);
-  const [category, setCategory] = useState<"Feature" | "Design" | "Bug fix" | "Accessibility" | "Performance">("Feature");
+  const [category, setCategory] = useState<
+    "Feature" | "Design" | "Bug fix" | "Accessibility" | "Performance"
+  >("Feature");
+  const [feedback, setFeedback] = useState("");
+  const [title, setTitle] = useState("AI Design Journal");
 
   useEffect(() => {
     const fetchStatus = async (retries = 3) => {
@@ -40,11 +44,20 @@ export default function CurriculumCard({
 
   const timeline = ["Created", "Open", "Checking", "Merged", "Closed", "Synced"];
   const currentIndex = timeline.indexOf(
-    status === "merged" ? "Merged" :
-    status === "closed" ? "Closed" :
-    status === "open" ? "Open" :
-    "Created"
+    status === "merged"
+      ? "Merged"
+      : status === "closed"
+      ? "Closed"
+      : status === "open"
+      ? "Open"
+      : "Created"
   );
+
+  const handleFeedback = async () => {
+    // Dummy AI learning: prepend feedback to title
+    setTitle((prev) => `${feedback} – ${prev}`);
+    setFeedback("");
+  };
 
   return (
     <div
@@ -53,7 +66,7 @@ export default function CurriculumCard({
       } bg-${dark ? "slate-900" : "slate-800"} p-8 text-white shadow-lg transition-colors`}
     >
       <div className="flex justify-between items-center mb-2">
-        <h2 className="text-2xl font-bold">AI Design Journal</h2>
+        <h2 className="text-2xl font-bold">{title}</h2>
         <button
           type="button"
           aria-label="Toggle dark mode"
@@ -104,7 +117,9 @@ export default function CurriculumCard({
         </button>
       </div>
       <div className="mb-4 flex gap-2">
-        <label htmlFor="category" className="text-sm font-medium">Label:</label>
+        <label htmlFor="category" className="text-sm font-medium">
+          Label:
+        </label>
         <select
           id="category"
           value={category}
@@ -121,7 +136,12 @@ export default function CurriculumCard({
       <div className="mb-4 text-sm text-slate-400">
         Live PR timeline:{" "}
         {timeline.map((step, i) => (
-          <span key={step} className={`flex items-center gap-1 ${i <= currentIndex ? "text-white" : "text-slate-500"}`}>
+          <span
+            key={step}
+            className={`flex items-center gap-1 ${
+              i <= currentIndex ? "text-white" : "text-slate-500"
+            }`}
+          >
             {step}
             {i < timeline.length - 1 && <span>→</span>}
           </span>
@@ -129,6 +149,26 @@ export default function CurriculumCard({
       </div>
       <div className="mb-2 text-sm text-slate-400">
         Next improvement proposal: {nextProposal}
+      </div>
+      <div className="mb-4">
+        <label htmlFor="feedback" className="block text-sm font-medium text-slate-300">
+          Feedback
+        </label>
+        <textarea
+          id="feedback"
+          value={feedback}
+          onChange={(e) => setFeedback(e.target.value)}
+          className="mt-1 block w-full rounded bg-slate-700 text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          rows={3}
+          placeholder="Share your thoughts..."
+        />
+        <button
+          type="button"
+          onClick={handleFeedback}
+          className="mt-2 rounded bg-yellow-600 px-4 py-2 text-white hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+        >
+          Submit Feedback
+        </button>
       </div>
       <div className="mt-4 text-xs text-slate-400">Built by AI</div>
 

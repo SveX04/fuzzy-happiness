@@ -8,6 +8,7 @@ export default function CurriculumCard({
 }) {
   const [status, setStatus] = useState<string | null>(null);
   const [dark, setDark] = useState(false);
+  const [nextProposal, setNextProposal] = useState<string>("");
 
   useEffect(() => {
     const fetchStatus = async () => {
@@ -17,13 +18,20 @@ export default function CurriculumCard({
         );
         if (!res.ok) throw new Error();
         const data = await res.json();
-        setStatus(data.state); // open, closed, merged
+        setStatus(data.state);
       } catch {
         setStatus("unknown");
       }
     };
     fetchStatus();
   }, [repo, prNumber]);
+
+  useEffect(() => {
+    const now = new Date();
+    const next = new Date(now);
+    next.setDate(now.getDate() + 7); // weekly proposal
+    setNextProposal(next.toLocaleDateString(undefined, { month: "short", day: "numeric" }));
+  }, []);
 
   return (
     <div
@@ -74,6 +82,9 @@ export default function CurriculumCard({
         >
           Get Started
         </button>
+      </div>
+      <div className="mb-2 text-sm text-slate-400">
+        Next improvement proposal: {nextProposal}
       </div>
       <div className="mt-4 text-xs text-slate-400">Built by AI</div>
     </div>

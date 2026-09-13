@@ -6,7 +6,7 @@ export default function CurriculumCard() {
   const [rating, setRating] = useState(0);
   const [dark, setDark] = useState(false);
   const stars = Array.from({ length: 5 }, (_, i) => i + 1);
-  const link = "https://example.com/curriculum";
+  const link = "https://example.com/design-journal";
 
   const copyLink = async () => {
     try {
@@ -20,7 +20,7 @@ export default function CurriculumCard() {
   return (
     <div className={`my-6 rounded-xl border ${dark ? "border-slate-300" : "border-slate-700"} bg-${dark ? "slate-900" : "slate-800"} p-8 text-${dark ? "white" : "white"} shadow-lg transition-colors`}>
       <div className="flex justify-between items-center mb-2">
-        <h2 className="text-2xl font-bold">Personal Learning Curriculum</h2>
+        <h2 className="text-2xl font-bold">AI Design Journal</h2>
         <button
           type="button"
           aria-label="Toggle dark mode"
@@ -31,7 +31,7 @@ export default function CurriculumCard() {
         </button>
       </div>
       <p className="mb-6 text-slate-300">
-        This curriculum adapts to your progress, keeping the most relevant lessons at the top. Rate the content to help it evolve.
+        Record design decisions and let AI auto-generate a visual change log to keep your team aligned.
       </p>
       <div className="mb-4 flex items-center gap-1">
         {stars.map((s) => (
@@ -53,7 +53,7 @@ export default function CurriculumCard() {
           type="button"
           className="rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-800"
         >
-          Start Learning
+          Start Journal
         </button>
         <button
           type="button"

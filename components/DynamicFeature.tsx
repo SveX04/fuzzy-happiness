@@ -9,6 +9,7 @@ export default function CurriculumCard({
   const [status, setStatus] = useState<string | null>(null);
   const [dark, setDark] = useState(false);
   const [nextProposal, setNextProposal] = useState<string>("");
+  const [preview, setPreview] = useState(false);
 
   useEffect(() => {
     const fetchStatus = async () => {
@@ -90,6 +91,13 @@ export default function CurriculumCard({
         >
           Get Started
         </button>
+        <button
+          type="button"
+          className="rounded-lg bg-indigo-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-800"
+          onClick={() => setPreview(true)}
+        >
+          Preview
+        </button>
       </div>
       <div className="mb-4 text-sm text-slate-400">
         Live PR timeline:{" "}
@@ -104,6 +112,31 @@ export default function CurriculumCard({
         Next improvement proposal: {nextProposal}
       </div>
       <div className="mt-4 text-xs text-slate-400">Built by AI</div>
+
+      {preview && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50"
+        >
+          <div className="bg-white rounded-lg p-6 max-w-lg w-full shadow-xl">
+            <h3 className="text-xl font-semibold mb-4">Preview of AI Design Journal</h3>
+            <div className="border rounded p-4">
+              <h4 className="text-lg font-medium mb-2">AI Design Journal</h4>
+              <p className="text-sm text-gray-700">
+                Record design decisions and let AI auto-generate a visual change log to keep your team aligned.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="mt-4 rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+              onClick={() => setPreview(false)}
+            >
+              Close Preview
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

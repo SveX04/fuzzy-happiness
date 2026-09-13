@@ -3,6 +3,7 @@ import { Octokit } from "@octokit/rest";
 
 const FILE_PATH = "components/DynamicFeature.tsx";
 const BASE_BRANCH = process.env.GITHUB_BASE_BRANCH ?? "main";
+const sixtyCharacters = 60;
 const systemPrompt = `Rewrite the supplied small Next.js component for the requested feature. Return only a concise, valid TSX file. Preserve the default export, use Tailwind CSS, and keep it accessible. Implement at most three small changes. No reasoning, prose, or markdown fences.`;
 
 function cleanGeneratedCode(code: string) {
@@ -133,7 +134,7 @@ export async function POST(request: Request) {
       owner,
       repo,
       path: FILE_PATH,
-      message: `feat(ai): ${task.slice(0,  sixtyCharacters)}`,
+      message: `feat(ai): ${task.slice(0, sixtyCharacters)}`,
       content: Buffer.from(newCode).toString("base64"),
       branch: branchName,
       sha: fileResponse.data.sha,
@@ -195,4 +196,3 @@ export async function POST(request: Request) {
   }
 }
 
-const sixtyCharacters = 60;
